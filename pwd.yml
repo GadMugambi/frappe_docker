@@ -219,7 +219,3 @@ volumes:
   redis-queue-data:
   sites:
   logs:
-
-networks:
-  frappe_network:
-    driver: bridge
