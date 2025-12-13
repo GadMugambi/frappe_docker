@@ -108,23 +108,17 @@ RUN apt-get update \
     libbz2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# apps.json includes
-# ARG APPS_JSON_BASE64
-# RUN if [ -n "${APPS_JSON_BASE64}" ]; then \
-#     mkdir /opt/frappe && echo "${APPS_JSON_BASE64}" | base64 -d > /opt/frappe/apps.json; \
-#   fi
-
+# 1. COPY THE FILE (Ensure apps.json is in your repo root)
 COPY apps.json /opt/frappe/apps.json
 
 USER frappe
 
 ARG FRAPPE_BRANCH=version-15
 ARG FRAPPE_PATH=https://github.com/frappe/frappe
-RUN export APP_INSTALL_ARGS="" && \
-  if [ -n "${APPS_JSON_BASE64}" ]; then \
-    export APP_INSTALL_ARGS="--apps_path=/opt/frappe/apps.json"; \
-  fi && \
-  bench init ${APP_INSTALL_ARGS}\
+
+# 2. RUN BENCH INIT (Hardcoded to use the file we just copied)
+RUN bench init \
+    --apps_path=/opt/frappe/apps.json \
     --frappe-branch=${FRAPPE_BRANCH} \
     --frappe-path=${FRAPPE_PATH} \
     --no-procfile \
