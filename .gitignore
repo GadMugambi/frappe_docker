@@ -28,3 +28,17 @@ venv
 
 # NodeJS
 node_modules
+
+# Production Environment (contains secrets)
+production.env
+production.env.local
+
+# Generated compose files (can be regenerated)
+docker-compose.production.yaml
+
+# Site data (never commit)
+sites/
+logs/
+
+# Build artifacts
+*.tar.gz
