@@ -34,7 +34,7 @@ production.env
 production.env.local
 
 # Generated compose files (can be regenerated)
-docker-compose.production.yaml
+# docker-compose.production.yaml
 
 # Site data (never commit)
 sites/
