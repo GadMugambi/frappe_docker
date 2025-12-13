@@ -1,7 +1,7 @@
 name: frappe_docker_production
 
 services:
-  # --- Configurator ---
+  # --- Configurator: Sets up Redis/DB connections ---
   configurator:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
     build:
@@ -12,6 +12,7 @@ services:
         FRAPPE_BRANCH: version-15
         PYTHON_VERSION: 3.11.6
         NODE_VERSION: 18.20.2
+    # Essential for running the command string below
     entrypoint:
       - bash
       - -c
@@ -34,7 +35,7 @@ services:
     volumes:
       - sites:/home/frappe/frappe-bench/sites
 
-  # --- Backend ---
+  # --- Backend: The Application Server ---
   backend:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
     build:
@@ -54,7 +55,7 @@ services:
       configurator:
         condition: service_completed_successfully
 
-  # --- Frontend (UPDATED) ---
+  # --- Frontend: Nginx (Exposed to Coolify) ---
   frontend:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
     build:
@@ -76,22 +77,32 @@ services:
       UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
       UPSTREAM_REAL_IP_RECURSIVE: "off"
     
-    # 1. REMOVE PORTS to avoid conflict
-    # 2. EXPOSE internal port
+    # 1. EXPOSE internal port 8080 (Do not use 'ports' binding to avoid host conflicts)
     expose:
       - "8080"
     
-    # 3. JOIN COOLIFY NETWORK so proxy can see it
+    # 2. JOIN COOLIFY NETWORK so Traefik Proxy can see this container
     networks:
       - default
       - coolify
 
-    # 4. TELL TRAEFIK TO USE PORT 8080 via LABELS
+    # 3. TRAEFIK LABELS for SaaS Routing
     labels:
       - "traefik.enable=true"
-      # This is the magic line that fixes 'No available server'
-      # It forces Traefik to route traffic to port 8080 inside the container
-      - "traefik.http.services.frappe-frontend-production.loadbalancer.server.port=8080"
+      
+      # SERVICE: Tells Traefik to send traffic to Port 8080 inside this container
+      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+      
+      # ROUTER RULE: 
+      # Matches any subdomain ending in .medic.co.ke OR the specific client1 domain.
+      # This allows you to add new clients just by adding DNS records and creating the site in Bench.
+      - "traefik.http.routers.frontend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.medic.co.ke`) || Host(`client1.medic.co.ke`)"
+      
+      # ENTRYPOINT: Must be 'https' (based on your specific server config)
+      - "traefik.http.routers.frontend.entrypoints=https"
+      
+      # TLS: Use Let's Encrypt for SSL
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
 
     volumes:
       - sites:/home/frappe/frappe-bench/sites
@@ -101,7 +112,7 @@ services:
       websocket:
         condition: service_started
 
-  # --- Websocket ---
+  # --- Websocket: Real-time notifications ---
   websocket:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
     build:
@@ -164,7 +175,7 @@ services:
       configurator:
         condition: service_completed_successfully
 
-  # --- Scheduler ---
+  # --- Scheduler: Cron jobs ---
   scheduler:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
     build:
@@ -231,9 +242,10 @@ volumes:
   redis-queue-data:
   sites:
 
-# --- NETWORKS (UPDATED) ---
+# --- NETWORKS ---
 networks:
   default:
     name: frappe_docker_production_default
+  # This network MUST exist in Coolify for the proxy to work
   coolify:
     external: true
