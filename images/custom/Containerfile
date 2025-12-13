@@ -1,3 +1,4 @@
+# images/custom/Containerfile
 ARG PYTHON_VERSION=3.11.6
 ARG DEBIAN_BASE=bookworm
 FROM python:${PYTHON_VERSION}-slim-${DEBIAN_BASE} AS base
@@ -108,10 +109,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # apps.json includes
-ARG APPS_JSON_BASE64
-RUN if [ -n "${APPS_JSON_BASE64}" ]; then \
-    mkdir /opt/frappe && echo "${APPS_JSON_BASE64}" | base64 -d > /opt/frappe/apps.json; \
-  fi
+# ARG APPS_JSON_BASE64
+# RUN if [ -n "${APPS_JSON_BASE64}" ]; then \
+#     mkdir /opt/frappe && echo "${APPS_JSON_BASE64}" | base64 -d > /opt/frappe/apps.json; \
+#   fi
+
+COPY apps.json /opt/frappe/apps.json
 
 USER frappe
 

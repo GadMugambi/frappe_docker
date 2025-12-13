@@ -1,3 +1,5 @@
+# images/bench/Dockerfile
+
 FROM debian:bookworm-slim AS bench
 
 LABEL author=frappé
