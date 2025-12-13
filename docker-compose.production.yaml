@@ -69,7 +69,7 @@ services:
       SOCKETIO: websocket:9000
       CLIENT_MAX_BODY_SIZE: 100m
       PROXY_READ_TIMEOUT: 300
-      FRAPPE_SITE_NAME_HEADER: $$host
+      # DELETED: FRAPPE_SITE_NAME_HEADER: $$host  <-- This was causing the error
       UPSTREAM_REAL_IP_ADDRESS: 172.17.0.1
       UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
       UPSTREAM_REAL_IP_RECURSIVE: "off"
