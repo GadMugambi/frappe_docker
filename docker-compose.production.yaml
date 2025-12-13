@@ -78,8 +78,11 @@ services:
       UPSTREAM_REAL_IP_ADDRESS: 172.17.0.1
       UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
       UPSTREAM_REAL_IP_RECURSIVE: "off"
-    ports:
-      - "8080:8080"
+    # --- CHANGED HERE ----------------------
+    # REMOVED: ports: - "8080:8080"
+    expose:
+      - "8080"
+    # ---------------------------------------
     volumes:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
