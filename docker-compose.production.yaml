@@ -90,6 +90,9 @@ services:
     labels:
       - "traefik.enable=true"
       
+      # CRITICAL: Explicitly tell Traefik which network to use (Fixes 504 Timeout)
+      - "traefik.docker.network=coolify"
+
       # SERVICE: Tells Traefik to send traffic to Port 8080 inside this container
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
       
