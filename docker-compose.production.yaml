@@ -93,10 +93,10 @@ services:
       # SERVICE: Tells Traefik to send traffic to Port 8080 inside this container
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
       
-      # ROUTER RULE: 
-      # Matches any subdomain ending in .medic.co.ke OR the specific client1 domain.
-      # This allows you to add new clients just by adding DNS records and creating the site in Bench.
-      - "traefik.http.routers.frontend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.medic.co.ke`) || Host(`client1.medic.co.ke`)"
+      # ROUTER RULE: SaaS Wildcard
+      # Matches any subdomain ending in .medic.co.ke
+      # NOTE: $$ is required to escape the dollar sign in Docker Compose
+      - "traefik.http.routers.frontend.rule=HostRegexp(`^.+\\.medic\\.co\\.ke$$`)"
       
       # ENTRYPOINT: Must be 'https' (based on your specific server config)
       - "traefik.http.routers.frontend.entrypoints=https"
