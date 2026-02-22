@@ -66,6 +66,10 @@ Real-time:
 
 ### 📁 Core Configuration Files
 
+> ⚠️ Before deploying, read
+> **[Choosing a Deployment Method](01-getting-started/01-choosing-a-deployment-method.md)**
+> to understand the differences between `pwd.yml`, development setup, the Easy Install script and the production setup.
+
 - **compose.yaml** - Main Docker Compose file defining all services
 - **example.env** - Environment variables template (copy to `.env`)
 - **pwd.yml** - "Play with Docker" - simplified single-file setup for quick testing
@@ -89,8 +93,15 @@ Docker Compose "overrides" that extend the base compose.yaml for different scena
 
 - **compose.mariadb.yaml** - Adds MariaDB database service
 - **compose.redis.yaml** - Adds Redis caching service
-- **compose.proxy.yaml** - Adds Traefik reverse proxy for multi-site hosting
-- **compose.https.yaml** - Adds SSL/TLS certificate management
+- **compose.proxy.yaml** - Adds Traefik reverse proxy for multi-site hosting (label-based routing)
+- **compose.https.yaml** - Adds Traefik HTTPS + automatic certs (uses `SITES_RULE`)
+- **compose.nginxproxy.yaml** - Adds nginx-proxy reverse proxy (HTTP, env-based `VIRTUAL_HOST`)
+- **compose.nginxproxy-ssl.yaml** - Adds nginx-proxy + acme-companion (HTTPS, env-based `LETSENCRYPT_HOST`)
+
+**Proxy choice:**
+
+- Traefik is more flexible for advanced routing and multi-bench setups
+- nginx-proxy is simpler for a single bench with host-based routing.
 
 ### 📁 development/ - Dev Environment
 
@@ -99,8 +110,8 @@ Docker Compose "overrides" that extend the base compose.yaml for different scena
 
 ### 📁 resources/ - Runtime Templates
 
-- **nginx-entrypoint.sh** - Dynamic Nginx configuration generator script
-- **nginx-template.conf** - Nginx configuration template with variable substitution
+- **core/nginx/nginx-entrypoint.sh** - Dynamic Nginx configuration generator script
+- **core/nginx/nginx-template.conf** - Nginx configuration template with variable substitution
 
 ## Custom Apps Explained
 
