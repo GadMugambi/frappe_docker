@@ -2,7 +2,6 @@ name: frappe_docker_production
 
 services:
   # --- Configurator: Sets up Redis/DB connections ---
-  # --- Configurator: Sets up Redis/DB connections ---
   configurator:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
     entrypoint:
@@ -24,12 +23,20 @@ services:
         bench set-config -g redis_socketio "redis://$$REDIS_QUEUE"
         bench set-config -gp socketio_port $$SOCKETIO_PORT
         echo "Configuration complete!"
+        touch /tmp/configurator_done
+        sleep infinity
     environment:
       DB_HOST: ${DB_HOST:-db}
       DB_PORT: ${DB_PORT:-3306}
       REDIS_CACHE: ${REDIS_CACHE:-redis-cache:6379}
       REDIS_QUEUE: ${REDIS_QUEUE:-redis-queue:6379}
       SOCKETIO_PORT: "9000"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/configurator_done"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
     depends_on:
       db:
         condition: service_healthy
@@ -50,7 +57,7 @@ services:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
       configurator:
-        condition: service_completed_successfully
+        condition: service_healthy
 
   # --- Frontend: Nginx (Exposed to Coolify) ---
   frontend:
@@ -65,37 +72,18 @@ services:
       UPSTREAM_REAL_IP_ADDRESS: 172.17.0.1
       UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
       UPSTREAM_REAL_IP_RECURSIVE: "off"
-    
-    # 1. EXPOSE internal port 8080 (Do not use 'ports' binding to avoid host conflicts)
     expose:
       - "8080"
-    
-    # 2. JOIN COOLIFY NETWORK so Traefik Proxy can see this container
     networks:
       - default
       - coolify
-
-    # 3. TRAEFIK LABELS for SaaS Routing
     labels:
       - "traefik.enable=true"
-      
-      # CRITICAL: Explicitly tell Traefik which network to use (Fixes 504 Timeout)
       - "traefik.docker.network=coolify"
-
-      # SERVICE: Tells Traefik to send traffic to Port 8080 inside this container
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
-      
-      # ROUTER RULE: SaaS Wildcard
-      # Matches any subdomain ending in .medic.co.ke
-      # NOTE: $$ is required to escape the dollar sign in Docker Compose
       - "traefik.http.routers.frontend.rule=HostRegexp(`^.+\\.medic\\.co\\.ke$$`)"
-      
-      # ENTRYPOINT: Must be 'https' (based on your specific server config)
       - "traefik.http.routers.frontend.entrypoints=https"
-      
-      # TLS: Use Let's Encrypt for SSL
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-
     volumes:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
@@ -114,7 +102,7 @@ services:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
       configurator:
-        condition: service_completed_successfully
+        condition: service_healthy
 
   # --- Queue Workers ---
   queue-short:
@@ -128,7 +116,7 @@ services:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
       configurator:
-        condition: service_completed_successfully
+        condition: service_healthy
 
   queue-long:
     image: ${CUSTOM_IMAGE:-erpnext-custom}:${CUSTOM_TAG:-latest}
@@ -141,7 +129,7 @@ services:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
       configurator:
-        condition: service_completed_successfully
+        condition: service_healthy
 
   # --- Scheduler: Cron jobs ---
   scheduler:
@@ -153,7 +141,7 @@ services:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
       configurator:
-        condition: service_completed_successfully
+        condition: service_healthy
 
   # --- Database ---
   db:
@@ -206,6 +194,5 @@ volumes:
 networks:
   default:
     name: frappe_docker_production_default
-  # This network MUST exist in Coolify for the proxy to work
   coolify:
     external: true
